@@ -95,6 +95,9 @@ defmodule ReqS3 do
     * `:endpoint_url` - if set, the endpoint URL for S3-compatible services. If
       `AWS_ENDPOINT_URL_S3` system environment variable is set, it is considered first.
 
+    * `:expires` - the number of seconds after which the URL should expire. Defaults to
+      `86400` (1 day).
+
   ## Examples
 
   Note: This example assumes `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables
@@ -141,6 +144,7 @@ defmodule ReqS3 do
     |> Keyword.update!(:url, &normalize_url(&1, options[:endpoint_url]))
     |> Keyword.put(:service, "s3")
     |> Keyword.put_new(:datetime, DateTime.utc_now())
+    |> Keyword.put_new(:expires, 86400)
     |> Keyword.drop([:bucket, :key, :endpoint_url])
     |> Req.Utils.aws_sigv4_url()
     |> URI.to_string()
