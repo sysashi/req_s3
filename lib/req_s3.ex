@@ -385,7 +385,7 @@ defmodule ReqS3 do
 
         url
 
-      [_ | _]  ->
+      [_ | _] ->
         # bucket has dots in it
         bucket = url.host
 
