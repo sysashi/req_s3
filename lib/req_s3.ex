@@ -180,6 +180,9 @@ defmodule ReqS3 do
 
     * `:datetime` - the request datetime, defaults to `DateTime.utc_now(:second)`.
 
+    * `:acl` - the canned ACL for the uploaded object. Accepted values are `:private` (default)
+      and `:public_read`. When `:public_read` is set, the object will be publicly accessible.
+
   ## Examples
 
       iex> options = [
@@ -224,7 +227,8 @@ defmodule ReqS3 do
         :expires_in,
         :bucket,
         :key,
-        :endpoint_url
+        :endpoint_url,
+        :acl
       ]
     )
 
@@ -248,6 +252,13 @@ defmodule ReqS3 do
     datetime = Keyword.get(options, :datetime, DateTime.utc_now())
     expires_in = Keyword.get(options, :expires_in, 60 * 60 * 1000)
 
+    acl =
+      case Keyword.get(options, :acl, :private) do
+        :public_read -> "public-read"
+        :private -> "private"
+        other -> raise ArgumentError, "invalid :acl value #{inspect(other)}, expected :private or :public_read"
+      end
+
     datetime = DateTime.truncate(datetime, :second)
     datetime = DateTime.add(datetime, expires_in, :millisecond)
     datetime_string = datetime |> DateTime.truncate(:second) |> DateTime.to_iso8601(:basic)
@@ -255,12 +266,13 @@ defmodule ReqS3 do
 
     credential = "#{access_key_id}/#{date_string}/#{region}/#{service}/aws4_request"
 
-    amz_headers = [
-      {"x-amz-server-side-encryption", "AES256"},
-      {"x-amz-credential", credential},
-      {"x-amz-algorithm", "AWS4-HMAC-SHA256"},
-      {"x-amz-date", datetime_string}
-    ]
+    amz_headers =
+      [
+        {"x-amz-server-side-encryption", "AES256"},
+        {"x-amz-credential", credential},
+        {"x-amz-algorithm", "AWS4-HMAC-SHA256"},
+        {"x-amz-date", datetime_string}
+      ] ++ if(acl != "private", do: [{"x-amz-acl", acl}], else: [])
 
     content_type_conditions =
       if content_type do
